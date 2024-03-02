@@ -1,0 +1,392 @@
+---
+title: "Case Study"
+author: "Daniel Anderson"
+date: "2023-07-26"
+output: pdf_document
+---
+
+## Introduction
+
+Thank you for joining me for my Bellabeat Data Analysis Capstone Case Study. I have recently been progressing through the Google Data Analytics Certificate and as part of my course I created a Case Study in order to answer some business questions for the stakeholders at Bellabeat. I will be using the standard steps of Data Analysis: Ask, Prepare, Process, Analyze, Share, and Act.
+
+## About Bellabeat
+
+Bellabeat is a high-tech manufacturer of health-focused products for women. Founded by Urška Sršen and Sando Mur in 2013 Bellabeat as grown rapidly and quickly positioned itself as a tech-driven wellness company for women by focusing on beautifully designed smart products for women's health. By leveraging Sršen's artistic background and experience the company combines technology and aesthetics to inform and empower women worldwide. With strong emphasis on activity, sleep, stress and reproductive health data Bellabeat offers insights that enable women to better understand their personal well being.
+
+By 2016 Bellabeat had expanded across the globe, launching multiple breakthrough products available on the global stage through online retailers and their own E-commerce channel. Sršen's continued strategic vision involving analyzing smart device usage to uncover usage trends will continue to inform Bellabeat's marketing strategies.
+
+## About this study
+
+In this study I have been tasked with analyzing smart device usage data in order to gain insight into how consumers use Non-bellabeat smart devices. I will then use these insights to apply context to, and help shape, the marketing strategy for Bellabeat.
+
+## Questions for analysis (Ask Phase)
+
+In this phase of the Case Study process I aimed to get a better grasp on the data and the issues that I am trying to research. I started by asking myself the following questions and exploring their answers. -What are some greater trends in the device usage? -How can these trends be used to influence change in the Bellabeat company? -How do these trends relate to the potential data from Bellabeat consumers? -How does this data allow us to target potential customers?
+
+## Business Task
+
+After forming questions and reviewing available business material I can clearly define my prescribed task: To analyze how Non-Bellabeat customers use their smart devices and how that data could be used to influence and increase Bellabeat's market share in the Fitness Smart-device arena.
+
+## Prepare Phase
+
+In this phase of the Case Study I will download and import all relevant data. I will also make sure all data is organized and that there are no errors or outliers that would unduly affect the results of my study.
+
+## Data Sources
+
+Bellabeat has encouraged me to use public data that explores smart device users daily habits. I was pointed to a specific data set, Fit Bit Fitness Tracker Data(CC0: Public Domain, available through Mobius). This Data set contains the personal fitness tracking information from 30 fitbit users. All eligible Fit bit users consented to the submission and subsequent retrieval of personal tracking data including minute-level output for activity, heart rate, and sleep monitoring. Also included is daily activity, steps, and heart rate that can be used to explore a user's daily habits.
+
+-Fit Bit Fitness Tracker Data: <https://www.kaggle.com/datasets/arashnic/fitbit> A little about this Data set: Distributed survey via Amazon Mechanical Turk between 03.12.2016-05.12.2016. Variation between output represents use of different types of Fit bit trackers and individual tracking behaviors / preferences.
+
+## Setting up my workspace
+
+To prepare my Rstudio I will install and initialize various packages that will enable me to forward my analysis into Bellabeat.
+
+I will be using the following packages for Data Cleaning and manipulation, ensuring the data is relevant and correct. I have not included the messages and warnings that are distributed after each step for clarity and ease of reading.
+
+```{r error=FALSE, warning=FALSE, message=FALSE}
+install.packages("tidyverse")
+install.packages("lubridate")
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("stringr")
+install.packages("skimr")
+install.packages("here")
+install.packages("ggplot2")
+setwd("/cloud/project")
+```
+
+After having installed all relevant packages it is time to load them into my work space.
+
+```{r error=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(skimr)
+library(janitor)
+library(here)
+
+```
+
+## Data Sources
+
+Now that all of our packages our loaded, it is time to import and review our data set to ensure it is applicable and that there are no problems. Again, our data is from: "<https://www.kaggle.com/datasets/arashnic/fitbit>"
+
+```{r}
+dailyActivity <- read.csv("dailyActivity_merged.csv")
+calories <- read.csv("dailyCalories_merged.csv")
+intensities <- read.csv("dailyIntensities_merged.csv")
+heartrate <- read.csv("heartrate_seconds_merged.csv")
+sleep <- read.csv("sleepDay_merged.csv")
+weight <- read.csv("weightLogInfo_merged.csv")
+steps <- read.csv("dailySteps_merged.csv")
+```
+
+We have imported 7 Data sets to do our analysis. To review our data and check for inconsistencies or errors we will move on to the next phase.
+
+## Process Phase
+
+First we will review our data to ensure it was imported correctly and all of the datatypes are correct. To do this we have many options, but I will use
+
+### Quick Look
+
+```{r}
+head(dailyActivity)
+glimpse(dailyActivity)
+```
+
+```{r}
+head(calories)
+glimpse(calories)
+```
+
+```{r}
+head(intensities)
+glimpse(intensities)
+```
+
+```{r}
+head(heartrate)
+glimpse(heartrate)
+```
+
+```{r}
+head(sleep)
+glimpse(sleep)
+```
+
+```{r}
+head(weight)
+glimpse(weight)
+```
+
+```{r}
+head(steps)
+glimpse(steps)
+```
+
+
+### Cleaning Time 
+
+
+In this phase I will be putting the data sets through basic cleaning procedures. The following steps were taken to Process, Clean, and Organize the data to make analysis in the next step that much more accurate and relevant to our purposes.
+
+After reviewing each data frame with head() and glimpse() we can progress into cleaning our data to make it more relevant and applicable for our purposes. For all of our data frames I will be using both is.na() and duplicated() to determine if we have any missing values or duplicated rows.
+
+```{r}
+activityisna<- colSums(is.na(dailyActivity))
+print(activityisna)
+activitydups<- duplicated(dailyActivity)
+print(dailyActivity[activitydups, ])
+```
+
+This same code block was run for all of our data sets.
+
+dailyActivity, Calories, Heart rate and Intensities data frames did not contain any missing values or duplicates. The data types are also correct. However during the cleaning process I found that our Sleep Data set had 3 duplicate rows. I found the rows and deleted them with the following code
+
+```         
+sleepdups<- duplicated(sleep)
+print(sleep[sleepdups, ])
+sleepDupRemov<- sleep[!sleepdups, ]
+```
+
+During the cleaning process I found that our WeightlogInfo Data set had 65 missing values in the "Fat" column. Because of this I decided to drop the entire column.
+
+I also discovered that our weight data set had 65 missing values in the "Fat" column. Because this is an abnormally high number of missing values and we don't have many rows in the first place, I will be deleting the entire row from the study to limit our exposure to incomplete data.
+
+```         
+weightisna<- colSums(is.na(weight))
+print(weightisna)
+weightcleaned<- subset(weight, select = -Fat)
+```
+
+While reviewing our data frames I noticed that the data for Steps was most likely contained inside the dailyActivity data frame. To confirm this I ran the following code. It will check if all data from ID and TotalSteps column in Steps is contained within the TotalSteps column of dailyActivity. If it is, the if loop will automatically drop the data set. If it is not the Data set will remain, and we will use it for analysis. return our True message, and we can drop the data set with from our study with rm() to eliminate redundancy. I will do the same thing with the Calories data set as I suspect it will be the same case.
+
+```{r}
+iscontained<- all(steps$StepTotal %in% dailyActivity$TotalSteps) && all(steps$Id %in% dailyActivity$Id)
+ if(iscontained){
+   cat("All data is present, freely drop the data set.")
+ } else {
+   cat("Not all data is present, keep dataset. ")
+ }
+```
+
+```{r}
+iscontained<- all(calories$Calories %in% dailyActivity$Calories) && all(calories$Id %in% dailyActivity$Id)
+ if(iscontained){
+   cat("All data is present, freely drop the data set.")
+ } else {
+   cat("Not all data is present, keep dataset. ")
+ }
+```
+
+As such I will be removing both Calories and Steps from my analysis as all the data is contained in dailyActivity.
+
+With all data loaded, corrected, cleaned and verified, we can move on to our analysis. \## Analyze Phase
+
+To start our analysis we will put each data frame through both n_distinct() and nrow() to determine how many unique values there are in the data frame, and to determine the number of rows in the entire data frame respectively.
+
+```{r}
+n_distinct(dailyActivity$Id)
+nrow(dailyActivity)
+
+
+n_distinct(calories$Id)
+nrow(calories)
+
+n_distinct(intensities$Id)
+nrow(intensities)
+
+
+n_distinct(sleep$Id)
+nrow(sleep)
+
+
+n_distinct(weight$Id)
+nrow(weight)
+
+n_distinct(heartrate$Id)
+nrow(heartrate)
+```
+### Initial Insights 
+
+
+From these prints we can make a few observations. dailyActivity, Calories, and Intensities all have the same number of unique ID's at 33. This is the largest amount of unique ID's in any data set so we can confidently assume this study has a maximum of 33 people involved at any given time.
+
+This also shows us that we only have 24 people who participated in the Sleep portion of the data, fewer contributed to the heart rate data at 14 unique ID's, and even fewer people contributed to the weight portion of the data, at 8 Unique Id's. This is obviously a very small sample size and as such this analysis will hardly be accurately indicative of any larger trends. As the Weight and Heart rate data sets contain so few complete data sets we will be extremely careful with the conclusions we draw, and will explain as such in our Share phase.
+
+
+### Digging Deeper
+
+
+We can use the summary() function to get a detailed summary of the data frame to continue making observations.
+
+```{r}
+dailyActivity %>%
+  select(TotalSteps, 
+         TotalDistance,
+         VeryActiveMinutes,
+         FairlyActiveMinutes,
+         LightlyActiveMinutes,
+         SedentaryMinutes,
+         Calories) %>%
+  summary()
+```
+
+From this data we can easily determine that the participants took an average of 7638 steps in 1 day, and they walked a total of 5.4 miles on average. If we compare that to some guideline standards from the CDC for example our data takes on another meaning. For example, the CDC recommends that people take an average of 10,000 steps a day for optimal health, meaning that our participants were only getting about 76% of their daily steps in.
+
+Additionally we can compare the number of minutes for each activity level against themselves and the SedentaryMinutes to get an idea for how active our participants are. The avg number of Very, Fairly, and Lightly Active Minutes were 21, 13.5, and 192 minutes per day. Compared to an average of almost \~1000 sedentary minutes, or almost 500% longer than the combined Activity time.
+
+Lets do the same with our Weight and sleep Data sets. Remember that participants did not heavily contribute to the Weight data set, so this data could be coincidental and inaccurate.
+
+```{r}
+sleep %>%
+  select(TotalTimeInBed,
+         TotalMinutesAsleep, 
+         TotalSleepRecords) %>%
+  summary()
+```
+
+From the above data we can draw some conclusions about our participants sleeping habits. The average person had 1 sleep event and spent an average of \~7 hours asleep a night. We can also see that there is a high variance in how long it might take someone to fall asleep. We can see that the minimum time to sleep is 3 minutes, Time in bed - Time asleep, but we can see that the maximum amount of time someone spent trying to fall asleep was nearly \~3 hours.
+
+```{r}
+weight %>%
+  select(WeightPounds,
+         BMI) %>%
+  summary()
+```
+
+From the above data run on our Weight data frame we can see that the avg participant of our study weighted \~159lbs. Again, there was quite a high variance between the max and mins, with the minimum weight being 116lbs and the maximum weight being 294lbs. Again keeping in mind that we only have 8 unique IDs for this data set.
+
+### Summary of key findings
+
+-   According to the CDC, the participants of this study are under the recommended daily steps and distance. CDC recommends 10,000 steps a day totaling to about 5 miles, while our participants made an an average of \~7600. Interestingly the mean travel distance of 5.4 miles is above the recommended 5 miles from the CDC.
+
+-   The majority of exercise performed while under this study falls into the Lightly Active category, with each participant performing almost \~200 minutes of Light Activity per day. Compared against length of sedentary time, which is an average of almost \~1000 minutes across participants, totaling over 16 1/2 hours of inactivity. This likely includes sleep time.
+
+-   Participants generally had decent sleep. On average a person in the study fell asleep 1 time and stayed asleep for 7 hours a night. This is slightly above the United States average which sits at just under 7 hours a day.
+
+-   The participants on average eat about \~2300 calories per day. Again we see a high Min-Max variance, with the highest calorie/day count being \~4000.
+
+-   My impression from the data is that the participants in this study are a fairly average group of people.
+
+## Share Phase (Visualization)
+
+### Pie Chart relating all Activity types
+
+```{r}
+average_durations<- colMeans(dailyActivity[c("LightlyActiveMinutes", "FairlyActiveMinutes", "VeryActiveMinutes", "SedentaryMinutes")])
+activity_types<- c("Light Activity", "Moderate Activity", "Heavy Activity", "Sedentary Minutes")
+summary_data <- data.frame(activity_type = activity_types, duration = average_durations)
+total_duration<- sum(summary_data$duration)
+activityviz<- ggplot(summary_data, aes(x="", y = duration, fill= activity_types)) +
+  geom_bar(stat="identity", width = 1) +
+  coord_polar(theta = "y")+
+  labs(title= "Average Activity Duration Comparison", 
+       fill = "Activity Type")+
+  theme_void()+
+  
+  geom_text(aes(label= paste0(round((duration / total_duration)*100, 1), "%")),
+            position = position_stack(vjust= 0.5))
+print(activityviz) 
+```
+
+Remember that Sedentary Minutes also includes Sleep minutes. From this Pie Chart we can easily see the disparity between the Sedentary portion of the participants day compared to the active portions. The active portions total just 18.6% of the total day. If we consider that this likely includes most general movement at work and around the house as well. We can confirm this with another graph. Let's take a look at Average Activity (Sedentary Minutes) compared against Steps.
+
+### Sedentary vs Steps
+
+```{r}
+scatter_plot <- ggplot(data=dailyActivity, aes(x= TotalSteps, y= SedentaryMinutes))+
+  geom_point()+
+  geom_smooth()+
+  labs(title= "Inverse Relationship Between Sedentary Time and Steps", y="SedentaryMinutes", x= "Steps" )+
+  theme_minimal()
+print(scatter_plot)
+
+```
+
+From this graph we can confirm the relationship between Steps and Sedentary Time. While sedentary minutes increase there is no noticeable gain to steps as Sedentary Time increases. This is expected, as someone who is sitting is not taking steps. We can compare this against a graph with FairlyActive data against steps.
+
+### FairlyActive vs Steps
+
+```{r}
+scatter_plot2 <- ggplot(data=dailyActivity, aes(x= TotalSteps, y= LightlyActiveMinutes))+
+  geom_point()+
+  geom_smooth()+
+  labs(title= "Relationship Between Active Time and Steps", y= "Fairly Active", x= "Steps")+
+  theme_minimal()
+print(scatter_plot2)
+```
+
+From this we can see that while there is an uptrend showing for some participants while Active minutes increase so do Steps. However it is interesting that the trend line follows a more simple curve. It shows a sharp trend line between the amount of fairly active minutes a person performs in relation to their total steps for the day. As we can see as activity increases so do steps. Again this is logical, as to be active you typically have to move. It is interesting to note that for most people after around 10,000 to 12,000 steps things seem to level off.
+
+```{r}
+caloriescatter<- ggplot(data=dailyActivity, aes(x=TotalSteps, y=Calories))+
+  geom_point()+
+  geom_smooth()+
+  labs(title = "Relationship between Steps and Calories", x="Total Steps", y = "Calories Consumed")+
+  theme_light()
+print(caloriescatter)
+  
+```
+
+This graph again gives us a very clear trend line to consider. It shows that as Total Steps go up, so does Calories Consumed. If we had better Weight data we could overlay that info on top of this graph, but as our Weight data set had only 8 unique users and the Min-Max variance was so high it would be misleading and potentially damaging to our study.
+
+### Duration on different days of the week
+
+```{r}
+dailyActivity$ActivityDate <- as.POSIXct(dailyActivity$ActivityDate, format = "%m/%d/%Y", tz = Sys.timezone())
+
+dailyActivity <- dailyActivity %>%
+  mutate(TotalExercise = LightlyActiveMinutes + FairlyActiveMinutes + VeryActiveMinutes)
+
+dailyActivity$DayOfWeek<- weekdays(dailyActivity$ActivityDate)
+
+ordered_days <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+
+dailyActivity$DayOfWeek <- factor(dailyActivity$DayOfWeek, levels = ordered_days)
+
+avg_exercise_by_weekday <- dailyActivity %>%
+  group_by(DayOfWeek) %>%
+  summarise(AvgDuration = mean(TotalExercise))
+
+bar_plot <- ggplot(data = avg_exercise_by_weekday, aes(x = DayOfWeek, y = AvgDuration, fill = DayOfWeek)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Duration of Exercise by Weekday",
+       x = "Day of the Week", y = "Average Duration") +
+  scale_fill_discrete(name = "Day of the Week") +
+  geom_text(aes(label = round(AvgDuration, 2)), vjust = -0.5, size = 3) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), legend.position = "none")
+print(bar_plot)
+```
+
+The above graph is incredibly useful for getting a gauge of which day people generally prefer to exercise on. From the graph above we can infer that people exercise for longer on Saturday, and the least on Saturday. This makes some logical sense, people would be energized with a day off on Saturday but Sunday they'd relax before Monday. We also see a drop on Wednesday and Thursday, towards the middle of the week when people would likely be the most tired.
+
+## Act Phase
+
+Bellabeat has enjoyed large success since its founding by empowering women in their pursuit of a more healthy self. Under the studious leadership of Urška Sršen and Sando Mur Bellabeat is poised to advance itself further into the ever growing market of women's health products. After reviewing the available data I can offer insights into how participants are using Health Data and how this Data might be used to increase Bellabeat's corporate success. 
+
+### Participants
+
+This Fit Bit Tracker Data makes it clear that the participants are all at least slightly active, but most experience long hours of sedentary activity, likely at a desk or other seated area. It is clear from the data that the more steps someone takes, the more physically fit they are. It is also clear from the data that most participants are among the average. All together there were not enough participants to obtain a study indicative of a larger population, but we can still gleam insights from the data. 
+
+### Recommendations to the Marketing Team
+
+- The average time a participant stayed sedentary throughout the day is too high. On average a person was sedentary for more than 16.5 hours of their day. Compared to an average of ~225 minutes of activity a day, or a little under ~4 hours day. The vast majority of this activity is labeled as Lightly Active, or something akin to a moderate walking pace. 
+  - I would recommend that the marketers make a push to increase activity. Perhaps a notification of some sort if a participant has been idle for longer than a certain amount of time. I would also recommend notifying the user of their activity throughout the day, and perhaps offer some sort of in-app reward for reaching a specific threshold of activity per day. 
+  
+- The average participant slept for around ~7 hours a night, and only had 1 sleep event. 
+  -This is quite near the national average, even a little above, but it can be increased more. I would suggest a notification telling the user that it is nearing their bed time. I would also look into decreasing light exposure for users after a certain time, perhaps dimming the screen automatically. I would also recommend notifying the user of their sleep every morning as well as offering a detailed breakdown at the end of every week. 
+  
+- The participants in this study took almost ~2500 steps fewer than the recommended CDC guidelines. The CDC recommends an adult walks approximately 10,000 steps a day, or roughly equal to ~ 5 miles. Interestingly the data shows that people walked longer than 5 miles on average, but still came out over 2000 steps below the guidelines. Per the CDC, compared to taking just 4000 steps, taking 8000 steps is associated with a 51% reduced risk of mortality from all causes. Taking 12,000 steps a day, when compared to 4000, will reduce your risk by nearly 65%. 
+  - I recommend ensuring the app is tracking distance correctly, as well as putting a greater emphasis on Step count. Step count is a quick and easy way for a person to get a gauge on how active they have been for the day. I would also recommend implementing some kind of reward for reaching specific Step milestones, and perhaps some kind of running average for the month for greater visibility. 
+
+- We did not take too hard of a look at weight simply because the data set was very flawed and wouldn't have been indicative of larger trends. But we did look at calories and how they relate to steps. As people exercise and move more, their steps increase. So does the fuel the body needs to keep going. 
+  - I would recommend Bellabeat stress to their users how important diet while exercising. I would also attempt to improve the weight tracking for the app in an attempt to increase the amount of participants in the data. 
+
+
+Thank you for reading my case study! If you have any improvements or comments please let me know. 
+
+Daniel Anderson
